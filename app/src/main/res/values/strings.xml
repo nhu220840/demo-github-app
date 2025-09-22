@@ -1,11 +1,11 @@
 <resources>
     <string name="app_name">USTH GitHub Client</string>
-<!--    <string name="auth_title">Sign In</string>-->
-<!--    <string name="auth_sign_in">Sign In</string>-->
+    <!--    <string name="auth_title">Sign In</string>-->
+    <!--    <string name="auth_sign_in">Sign In</string>-->
     <string name="user_name_or_email">Username or Email</string>
     <string name="password">Password</string>
 
-<!--    <string name="auth_use_mock">Use Mock Data</string>-->
+    <!--    <string name="auth_use_mock">Use Mock Data</string>-->
     <string name="auth_title">Sign in with GitHub</string>
     <string name="auth_description">Enter your personal access token to preview your GitHub data.</string>
     <string name="auth_token_hint">Personal access token</string>
@@ -27,4 +27,24 @@
     <string name="followers_profile_unavailable">Cannot open %1$s\'s profile right now.</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="user_profile_title">Profile</string>
+    <string name="user_profile_username_format">/@%1$s</string>
+    <string name="user_profile_repos_label">Repositories</string>
+    <string name="user_profile_followers_label">Followers</string>
+    <string name="user_profile_following_label">Following</string>
+    <string name="user_profile_about_section">About</string>
+    <string name="user_profile_contact_section">Contact</string>
+    <string name="user_profile_timeline_section">Activity timeline</string>
+    <string name="user_profile_location_label">Location</string>
+    <string name="user_profile_company_label">Company</string>
+    <string name="user_profile_email_label">Email</string>
+    <string name="user_profile_blog_label">Blog</string>
+    <string name="user_profile_profile_label">GitHub</string>
+    <string name="user_profile_created_label">Joined</string>
+    <string name="user_profile_updated_label">Last updated</string>
+    <string name="user_profile_error_generic">Unable to load this profile right now.</string>
+    <string name="user_profile_retry">Retry</string>
+    <string name="user_profile_use_mock">Use mock data</string>
+    <string name="user_profile_mock_badge">Showing preview data</string>
 </resources>

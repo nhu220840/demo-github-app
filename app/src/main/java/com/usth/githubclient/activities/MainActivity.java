@@ -81,7 +81,8 @@ public class MainActivity extends AppCompatActivity implements FollowersListFrag
                 Toast.makeText(this, "Home selected", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (id == R.id.nav_profile) {
-                Toast.makeText(this, "Profile selected", Toast.LENGTH_SHORT).show();
+                Intent intent = UserProfileActivity.createIntent(this, null);
+                startActivity(intent);
                 return true;
             } else if (id == R.id.nav_repositories) {
                 Toast.makeText(this, "Repositories selected", Toast.LENGTH_SHORT).show();
