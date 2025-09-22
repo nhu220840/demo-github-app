@@ -33,7 +33,7 @@ import java.util.Optional;
  * Hosts the main search experience and renders a list of followers that can be filtered.
  */
 // Thêm "implements NavigationView.OnNavigationItemSelectedListener"
-public class MainActivity extends AppCompatActivity implements FollowersListFragment.OnFollowerSelectedListener, NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements FollowersListFragment.OnFollowerSelectedListener {
 
     private static final String KEY_CURRENT_QUERY = "key_current_query";
 
@@ -52,13 +52,19 @@ public class MainActivity extends AppCompatActivity implements FollowersListFrag
 
         setupToolbar();
 
-        // Thiết lập cho DrawerLayout và NavigationView
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, binding.drawerLayout, binding.toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        binding.drawerLayout.addDrawerListener(toggle);
-        toggle.syncState();
+        // ---- XÓA ĐOẠN CODE CŨ DƯỚI ĐÂY ----
+    /*
+    ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+            this, binding.drawerLayout, binding.toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+    binding.drawerLayout.addDrawerListener(toggle);
+    toggle.syncState();
 
-        binding.navView.setNavigationItemSelectedListener(this);
+    binding.navView.setNavigationItemSelectedListener(this);
+    */
+        // ---- KẾT THÚC PHẦN XÓA ----
+
+        // ---- THÊM PHƯƠNG THỨC MỚI VÀO ĐÂY ----
+        setupBottomNavigation();
 
         attachFollowersFragment();
         initialiseMockFollowers();
@@ -66,6 +72,23 @@ public class MainActivity extends AppCompatActivity implements FollowersListFrag
         setupSearchField();
 
         filterFollowers(currentQuery);
+    }
+
+    private void setupBottomNavigation() {
+        binding.bottomNavigation.setOnItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.nav_home) {
+                Toast.makeText(this, "Home selected", Toast.LENGTH_SHORT).show();
+                return true;
+            } else if (id == R.id.nav_profile) {
+                Toast.makeText(this, "Profile selected", Toast.LENGTH_SHORT).show();
+                return true;
+            } else if (id == R.id.nav_repositories) {
+                Toast.makeText(this, "Repositories selected", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+            return false;
+        });
     }
 
     private void setupToolbar() {
@@ -210,21 +233,6 @@ public class MainActivity extends AppCompatActivity implements FollowersListFrag
         binding = null;
         searchWatcher = null;
         followersFragment = null;
-    }
-
-    @Override
-    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        // Xử lý các sự kiện click trên item của navigation view ở đây.
-        int id = item.getItemId();
-
-        // Thêm logic xử lý cho từng item menu
-        // Ví dụ:
-        // if (id == R.id.nav_gallery) {
-        //
-        // }
-
-        binding.drawerLayout.closeDrawer(GravityCompat.START);
-        return true;
     }
 
     private abstract static class SimpleTextWatcher implements TextWatcher {
