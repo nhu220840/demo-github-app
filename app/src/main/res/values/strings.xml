@@ -56,6 +56,7 @@
     <string name="repositories_empty_state">No repositories to display.</string>
     <string name="repositories_error_generic">Unable to load repositories right now.</string>
     <string name="repositories_mock_badge">Showing preview repositories</string>
+    <string name="repositories_results_count">Showing %1$d repositories</string>
     <string name="repository_select_prompt">Select a repository to view its details.</string>
     <string name="repository_stats_stars">%1$s stars</string>
     <string name="repository_stats_forks">%1$s forks</string>

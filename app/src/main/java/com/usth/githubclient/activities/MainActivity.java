@@ -6,23 +6,22 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.GravityCompat;
 
-import com.google.android.material.navigation.NavigationView;
 import com.usth.githubclient.R;
 import com.usth.githubclient.databinding.ActivityMainBinding;
 import com.usth.githubclient.di.ServiceLocator;
 import com.usth.githubclient.domain.model.GitHubUserProfileDataEntry;
 import com.usth.githubclient.domain.model.MockDataFactory;
+import com.usth.githubclient.domain.model.ReposDataEntry;
 import com.usth.githubclient.domain.model.UserSessionData;
 import com.usth.githubclient.fragments.FollowersListFragment;
+import com.usth.githubclient.fragments.RepositoriesListFragment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,15 +32,23 @@ import java.util.Optional;
  * Hosts the main search experience and renders a list of followers that can be filtered.
  */
 // Thêm "implements NavigationView.OnNavigationItemSelectedListener"
-public class MainActivity extends AppCompatActivity implements FollowersListFragment.OnFollowerSelectedListener {
-
+public class MainActivity extends AppCompatActivity implements
+        FollowersListFragment.OnFollowerSelectedListener,
+        RepositoriesListFragment.OnRepositorySelectedListener {
     private static final String KEY_CURRENT_QUERY = "key_current_query";
+    private static final String KEY_SELECTED_TAB = "key_selected_tab";
+
 
     private ActivityMainBinding binding;
     private FollowersListFragment followersFragment;
+    private RepositoriesListFragment repositoriesFragment;
+
     private TextWatcher searchWatcher;
-    private List<GitHubUserProfileDataEntry> allFollowers = new ArrayList<>();
+    private final List<GitHubUserProfileDataEntry> allFollowers = new ArrayList<>();
+    private final List<ReposDataEntry> mockRepositories = new ArrayList<>();
     private String currentQuery = "";
+    private int selectedNavigationItemId = R.id.nav_home;
+
 
 
     @Override
@@ -50,43 +57,41 @@ public class MainActivity extends AppCompatActivity implements FollowersListFrag
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        initialiseMockFollowers();
+        initialiseMockRepositories();
+
         setupToolbar();
 
-        // ---- XÓA ĐOẠN CODE CŨ DƯỚI ĐÂY ----
-    /*
-    ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-            this, binding.drawerLayout, binding.toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-    binding.drawerLayout.addDrawerListener(toggle);
-    toggle.syncState();
-
-    binding.navView.setNavigationItemSelectedListener(this);
-    */
-        // ---- KẾT THÚC PHẦN XÓA ----
-
-        // ---- THÊM PHƯƠNG THỨC MỚI VÀO ĐÂY ----
         setupBottomNavigation();
 
-        attachFollowersFragment();
-        initialiseMockFollowers();
         restoreState(savedInstanceState);
         setupSearchField();
 
-        filterFollowers(currentQuery);
+        if (selectedNavigationItemId == R.id.nav_repositories) {
+            showRepositoriesScreen();
+            binding.bottomNavigation.setSelectedItemId(R.id.nav_repositories);
+        } else {
+            selectedNavigationItemId = R.id.nav_home;
+            showFollowersScreen();
+            binding.bottomNavigation.setSelectedItemId(R.id.nav_home);
+        }
     }
 
     private void setupBottomNavigation() {
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_home) {
-                Toast.makeText(this, "Home selected", Toast.LENGTH_SHORT).show();
+                selectedNavigationItemId = R.id.nav_home;
+                showFollowersScreen();
+                return true;
+            } else if (id == R.id.nav_repositories) {
+                selectedNavigationItemId = R.id.nav_repositories;
+                showRepositoriesScreen();
                 return true;
             } else if (id == R.id.nav_profile) {
                 Intent intent = UserProfileActivity.createIntent(this, null);
                 startActivity(intent);
-                return true;
-            } else if (id == R.id.nav_repositories) {
-                Toast.makeText(this, "Repositories selected", Toast.LENGTH_SHORT).show();
-                return true;
+                return false;
             }
             return false;
         });
@@ -115,16 +120,40 @@ public class MainActivity extends AppCompatActivity implements FollowersListFrag
         }
     }
 
-    private void attachFollowersFragment() {
-        followersFragment = (FollowersListFragment) getSupportFragmentManager()
-                .findFragmentByTag(FollowersListFragment.TAG);
-        if (followersFragment == null) {
-            followersFragment = FollowersListFragment.newInstance();
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, followersFragment, FollowersListFragment.TAG)
-                    .commitNow();
+    private void showFollowersScreen() {
+        binding.toolbar.setTitle(R.string.main_title);
+        binding.searchInputLayout.setVisibility(View.VISIBLE);
+        binding.resultsSummary.setVisibility(View.VISIBLE);
+
+        repositoriesFragment = null;
+        followersFragment = FollowersListFragment.newInstance();
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, followersFragment, FollowersListFragment.TAG)
+                .commit();
+        filterFollowers(currentQuery);
+    }
+
+    private void showRepositoriesScreen() {
+        binding.toolbar.setTitle(R.string.repositories_title);
+        binding.searchInputLayout.setVisibility(View.GONE);
+        binding.searchInputEditText.clearFocus();
+
+        followersFragment = null;
+        int repositoryCount = mockRepositories.size();
+        if (repositoryCount == 0) {
+            binding.resultsSummary.setText(R.string.repositories_empty_state);
+        } else {
+            binding.resultsSummary.setText(getString(R.string.repositories_results_count, repositoryCount));
         }
+        binding.resultsSummary.setVisibility(View.VISIBLE);
+
+        repositoriesFragment = RepositoriesListFragment.newInstance();
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, repositoriesFragment, RepositoriesListFragment.TAG)
+                .commit();
+        repositoriesFragment.submitList(mockRepositories);
     }
 
     private void initialiseMockFollowers() {
@@ -132,9 +161,16 @@ public class MainActivity extends AppCompatActivity implements FollowersListFrag
         allFollowers.addAll(MockDataFactory.mockFollowers());
     }
 
+    private void initialiseMockRepositories() {
+        mockRepositories.clear();
+        mockRepositories.addAll(MockDataFactory.mockRepositories());
+    }
+
+
     private void restoreState(@Nullable Bundle savedInstanceState) {
         if (savedInstanceState != null) {
             currentQuery = savedInstanceState.getString(KEY_CURRENT_QUERY, "");
+            selectedNavigationItemId = savedInstanceState.getInt(KEY_SELECTED_TAB, R.id.nav_home);
             if (!TextUtils.isEmpty(currentQuery)) {
                 binding.searchInputEditText.setText(currentQuery);
                 binding.searchInputEditText.setSelection(currentQuery.length());
@@ -154,6 +190,9 @@ public class MainActivity extends AppCompatActivity implements FollowersListFrag
     }
 
     private void filterFollowers(@NonNull String query) {
+        if (selectedNavigationItemId != R.id.nav_home) {
+            return;
+        }
         List<GitHubUserProfileDataEntry> filteredFollowers;
         String trimmedQuery = query.trim();
         if (trimmedQuery.isEmpty()) {
@@ -220,9 +259,23 @@ public class MainActivity extends AppCompatActivity implements FollowersListFrag
     }
 
     @Override
+    public void onRepositorySelected(@NonNull ReposDataEntry repository) {
+        String url = repository.getHtmlUrl();
+        if (!TextUtils.isEmpty(url)) {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivity(intent);
+                return;
+            }
+        }
+        Toast.makeText(this, R.string.repository_open_browser_error, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putString(KEY_CURRENT_QUERY, currentQuery);
+        outState.putInt(KEY_SELECTED_TAB, selectedNavigationItemId);
     }
 
     @Override
@@ -234,6 +287,7 @@ public class MainActivity extends AppCompatActivity implements FollowersListFrag
         binding = null;
         searchWatcher = null;
         followersFragment = null;
+        repositoriesFragment = null;
     }
 
     private abstract static class SimpleTextWatcher implements TextWatcher {
