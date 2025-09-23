@@ -127,6 +127,73 @@ public final class MockDataFactory {
                 .owner(repoOwner)
                 .build());
 
+        // --- Dữ liệu mới thêm vào ---
+
+        // 4. Repo với tên và mô tả rất dài
+        repositories.add(ReposDataEntry.builder(5550002L, "this-is-a-repository-with-a-very-long-name-to-test-ui-wrapping",
+                        "https://github.com/" + repoOwner.getUsername() + "/long-name-repo")
+                .fullName(repoOwner.getUsername() + "/this-is-a-repository-with-a-very-long-name-to-test-ui-wrapping")
+                .description("This is a mock description that is intentionally made very long to see how the user interface handles text overflow, wrapping, and truncation within the repository list item and detail views. It should ideally be handled gracefully without breaking the layout.")
+                .language("Java")
+                .stargazersCount(101)
+                .forksCount(22)
+                .watchersCount(50)
+                .openIssuesCount(5)
+                .defaultBranch("main")
+                .isPrivate(false)
+                .isFork(false)
+                .owner(repoOwner)
+                .build());
+
+        // 5. Repo không có mô tả và ngôn ngữ
+        repositories.add(ReposDataEntry.builder(5550003L, "minimal-repo",
+                        "https://github.com/" + repoOwner.getUsername() + "/minimal-repo")
+                .fullName(repoOwner.getUsername() + "/minimal-repo")
+                .description(null) // No description
+                .language(null)   // No language
+                .stargazersCount(15)
+                .forksCount(3)
+                .watchersCount(10)
+                .openIssuesCount(1)
+                .defaultBranch("main")
+                .isPrivate(false)
+                .isFork(false)
+                .owner(repoOwner)
+                .build());
+
+        // 6. Repo "mới tinh" với các chỉ số bằng 0
+        repositories.add(ReposDataEntry.builder(5550004L, "brand-new-project",
+                        "https://github.com/" + repoOwner.getUsername() + "/brand-new-project")
+                .fullName(repoOwner.getUsername() + "/brand-new-project")
+                .description("A freshly created repository for a new project idea.")
+                .language("Python")
+                .stargazersCount(0)
+                .forksCount(0)
+                .watchersCount(0)
+                .openIssuesCount(0)
+                .defaultBranch("main")
+                .isPrivate(false)
+                .isFork(false)
+                .owner(repoOwner)
+                .build());
+
+        // 7. Repo private
+        repositories.add(ReposDataEntry.builder(5550005L, "secret-project",
+                        "https://github.com/" + repoOwner.getUsername() + "/secret-project")
+                .fullName(repoOwner.getUsername() + "/secret-project")
+                .description("A private repository for top-secret development work.")
+                .language("Go")
+                .stargazersCount(2)
+                .forksCount(1)
+                .watchersCount(1)
+                .openIssuesCount(0)
+                .defaultBranch("master")
+                .isPrivate(true) // Mark as private
+                .isFork(false)
+                .owner(repoOwner)
+                .build());
+
+
         return Collections.unmodifiableList(repositories);
     }
 

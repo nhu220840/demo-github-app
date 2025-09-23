@@ -1,32 +1,36 @@
 <resources>
-    <string name="app_name">USTH GitHub Client</string>
-    <!--    <string name="auth_title">Sign In</string>-->
-    <!--    <string name="auth_sign_in">Sign In</string>-->
-    <string name="user_name_or_email">Username or Email</string>
-    <string name="password">Password</string>
+    <string name="app_name">Github Client</string>
+    <string name="nav_header_title">Github Client</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
 
-    <!--    <string name="auth_use_mock">Use Mock Data</string>-->
-    <string name="auth_title">Sign in with GitHub</string>
-    <string name="auth_description">Enter your personal access token to preview your GitHub data.</string>
-    <string name="auth_token_hint">Personal access token</string>
-    <string name="auth_sign_in">Sign in</string>
-    <string name="auth_use_mock">Preview with mock data</string>
-    <string name="auth_success_message">Welcome back, %1$s!</string>
-    <string name="main_title">GitHub Explorer</string>
-    <string name="main_subtitle_username">Signed in as @%1$s</string>
-    <string name="main_subtitle_guest">Previewing mock data</string>
-    <string name="main_search_hint">Search followers</string>
-    <string name="followers_results_placeholder">Showing mock followers</string>
+    <string name="auth_title">Sign in to GitHub</string>
+    <string name="user_name_or_email">Username or email</string>
+    <string name="password">Password</string>
+    <string name="auth_sign_in">Sign In</string>
+    <string name="auth_use_mock">Use mock data</string>
+
+    <string name="main_search_hint">Search…</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="title_home">Home</string>
+    <string name="title_profile">Profile</string>
+    <string name="title_repo">Repositories</string>
+
+    <string name="main_title">Followers</string>
+    <string name="main_subtitle_username">\@%1$s</string>
+    <string name="main_subtitle_guest">Guest</string>
+    <string name="followers_results_empty">No results found</string>
     <string name="followers_results_all">Showing all %1$d followers</string>
     <string name="followers_results_filtered">Showing %1$d of %2$d followers</string>
-    <string name="followers_results_empty">No followers match your search.</string>
-    <string name="followers_empty_state">No followers to display.</string>
-    <string name="followers_avatar_content_description">Follower avatar</string>
+
+
+    <string name="followers_avatar_content_description">User\'s avatar</string>
+    <string name="followers_empty_state">No items to display.</string>
     <string name="followers_username_format">/@%1$s</string>
     <string name="followers_stats_format">%1$d repositories · %2$d followers</string>
     <string name="followers_profile_unavailable">Cannot open %1$s\'s profile right now.</string>
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <string name="user_profile_title">Profile</string>
     <string name="user_profile_username_format">/@%1$s</string>
@@ -47,4 +51,23 @@
     <string name="user_profile_retry">Retry</string>
     <string name="user_profile_use_mock">Use mock data</string>
     <string name="user_profile_mock_badge">Showing preview data</string>
+
+    <string name="repositories_title">Repositories</string>
+    <string name="repositories_empty_state">No repositories to display.</string>
+    <string name="repositories_error_generic">Unable to load repositories right now.</string>
+    <string name="repositories_mock_badge">Showing preview repositories</string>
+    <string name="repository_select_prompt">Select a repository to view its details.</string>
+    <string name="repository_stats_stars">%1$s stars</string>
+    <string name="repository_stats_forks">%1$s forks</string>
+    <string name="repository_stats_watchers">%1$s watchers</string>
+    <string name="repository_stats_open_issues">%1$s open issues</string>
+    <string name="repository_default_branch_format">Default branch: %1$s</string>
+    <string name="repository_created_format">Created %1$s</string>
+    <string name="repository_updated_format">Updated %1$s</string>
+    <string name="repository_pushed_format">Pushed %1$s</string>
+    <string name="repository_visibility_private">Private repository</string>
+    <string name="repository_visibility_public">Public repository</string>
+    <string name="repository_visibility_fork">Forked repository</string>
+    <string name="repository_open_browser_error">Unable to open this repository.</string>
+    <string name="mock_data_badge">Mock Data</string>
 </resources>
