@@ -34,7 +34,9 @@ public class UserViewModel extends ViewModel {
     private String currentUsername;
 
     // **BIẾN ĐIỀU KHIỂN**: Đặt là 'true' để BẬT chế độ mock data
-    private static final boolean FORCE_MOCK_DATA = true;
+    private static final boolean FORCE_MOCK_DATA = false;
+    private static final String FALLBACK_USERNAME = "octocat";
+
 
     public UserViewModel() {
         this(ServiceLocator.getInstance().authRepository(), buildDefaultUserRepository());
@@ -58,14 +60,6 @@ public class UserViewModel extends ViewModel {
     }
 
     public void loadUserProfile(@Nullable String username) {
-        // **THAY ĐỔI QUAN TRỌNG**: Kiểm tra biến FORCE_MOCK_DATA.
-        // Nếu là 'true', gọi useMockProfile() và dừng lại ngay lập tức.
-        if (FORCE_MOCK_DATA) {
-            useMockProfile();
-            return;
-        }
-
-        // --- Logic cũ để tải dữ liệu thật ---
         String normalized = username == null ? "" : username.trim();
 
         if (normalized.isEmpty()) {
@@ -73,15 +67,20 @@ public class UserViewModel extends ViewModel {
             if (session != null) {
                 Optional<GitHubUserProfileDataEntry> profile = session.getUserProfile();
                 if (profile.isPresent()) {
-                    currentUsername = profile.get().getUsername();
-                    uiState.setValue(UserUiState.success(profile.orElse(null), false));
+                    GitHubUserProfileDataEntry cachedProfile = profile.get();
+                    currentUsername = cachedProfile.getUsername();
+                    uiState.setValue(UserUiState.success(cachedProfile, false));
                     return;
                 }
                 normalized = session.getUsername();
-            } else {
-                useMockProfile();
-                return;
             }
+            if (normalized == null || normalized.trim().isEmpty()) {
+                normalized = FALLBACK_USERNAME;
+            }
+        }
+
+        if (normalized.isEmpty()) {
+            normalized = FALLBACK_USERNAME;
         }
 
         if (normalized.equalsIgnoreCase(currentUsername)
@@ -114,12 +113,6 @@ public class UserViewModel extends ViewModel {
             return;
         }
         loadUserProfile(currentUsername);
-    }
-
-    public void useMockProfile() {
-        GitHubUserProfileDataEntry mockProfile = MockDataFactory.mockUserProfile();
-        currentUsername = mockProfile.getUsername();
-        uiState.setValue(UserUiState.success(mockProfile, true));
     }
 
     @Override

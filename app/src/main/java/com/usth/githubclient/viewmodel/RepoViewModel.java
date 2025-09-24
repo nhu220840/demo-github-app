@@ -28,7 +28,9 @@ import java.util.concurrent.Executors;
  */
 public class RepoViewModel extends ViewModel {
 
-    private static final boolean FORCE_MOCK_DATA = true;
+//    private static final boolean FORCE_MOCK_DATA = false;
+    private static final String FALLBACK_USERNAME = "octocat";
+
 
     private final MutableLiveData<RepositoriesUiState> repositoriesState =
             new MutableLiveData<>(RepositoriesUiState.idle());
@@ -68,21 +70,26 @@ public class RepoViewModel extends ViewModel {
     }
 
     public void loadRepositories(@Nullable String username) {
-        if (FORCE_MOCK_DATA) {
-            useMockRepositories();
-            return;
-        }
 
         String normalized = username == null ? "" : username.trim();
         if (normalized.isEmpty()) {
             UserSessionData session = authRepository.getCachedSession();
             if (session != null) {
                 currentUsername = session.getUsername();
-                emitRepositoriesSuccess(session.getRepositories(), false, false);
-                return;
+                List<ReposDataEntry> cachedRepositories = session.getRepositories();
+                if (!cachedRepositories.isEmpty()) {
+                    emitRepositoriesSuccess(cachedRepositories, false, false);
+                    return;
+                }
+                normalized = session.getUsername();
             }
-            useMockRepositories();
-            return;
+            if (normalized == null || normalized.trim().isEmpty()) {
+                normalized = FALLBACK_USERNAME;
+            }
+        }
+
+        if (normalized.isEmpty()) {
+            normalized = FALLBACK_USERNAME;
         }
 
         if (normalized.equalsIgnoreCase(currentUsername)
@@ -99,9 +106,10 @@ public class RepoViewModel extends ViewModel {
         boolean usingMock = currentState != null && currentState.isUsingMockData();
         repositoriesState.setValue(RepositoriesUiState.loading(existing, usingMock));
 
+        String finalNormalized = normalized;
         executorService.execute(() -> {
             try {
-                List<ReposDataEntry> repositories = repoRepository.fetchUserRepositories(normalized);
+                List<ReposDataEntry> repositories = repoRepository.fetchUserRepositories(finalNormalized);
                 emitRepositoriesSuccess(repositories, false, true);
             } catch (IOException exception) {
                 String message = exception.getMessage();
@@ -128,13 +136,6 @@ public class RepoViewModel extends ViewModel {
         boolean usingMock = repositoriesState.getValue() != null
                 && repositoriesState.getValue().isUsingMockData();
         repositoryDetailState.setValue(RepositoryDetailUiState.from(repository, usingMock));
-    }
-
-    public void useMockRepositories() {
-        List<ReposDataEntry> repositories = MockDataFactory.mockRepositories();
-        currentUsername = null;
-        selectedRepositoryId = null;
-        emitRepositoriesSuccess(repositories, true, false);
     }
 
     private void emitRepositoriesSuccess(@NonNull List<ReposDataEntry> repositories,
