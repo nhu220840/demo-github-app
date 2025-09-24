@@ -25,6 +25,8 @@
     <string name="followers_results_all">Showing all %1$d followers</string>
     <string name="followers_results_filtered">Showing %1$d of %2$d followers</string>
 
+    <string name="followers_loading_state">Loading followers…</string>
+    <string name="followers_error_state">Unable to load followers.</string>
 
     <string name="followers_avatar_content_description">User\'s avatar</string>
     <string name="followers_empty_state">No items to display.</string>
@@ -57,6 +59,8 @@
     <string name="repositories_error_generic">Unable to load repositories right now.</string>
     <string name="repositories_mock_badge">Showing preview repositories</string>
     <string name="repositories_results_count">Showing %1$d repositories</string>
+    <string name="repositories_loading_state">Loading repositories…</string>
+    <string name="repositories_error_state">Unable to load repositories.</string>
     <string name="repository_select_prompt">Select a repository to view its details.</string>
     <string name="repository_stats_stars">%1$s stars</string>
     <string name="repository_stats_forks">%1$s forks</string>

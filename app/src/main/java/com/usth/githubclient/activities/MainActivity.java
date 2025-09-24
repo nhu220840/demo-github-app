@@ -14,19 +14,26 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.usth.githubclient.R;
+import com.usth.githubclient.data.remote.ApiClient;
+import com.usth.githubclient.data.remote.GithubApiService;
+import com.usth.githubclient.data.repository.RepoRepository;
+import com.usth.githubclient.data.repository.UserRepository;
 import com.usth.githubclient.databinding.ActivityMainBinding;
 import com.usth.githubclient.di.ServiceLocator;
 import com.usth.githubclient.domain.model.GitHubUserProfileDataEntry;
-import com.usth.githubclient.domain.model.MockDataFactory;
 import com.usth.githubclient.domain.model.ReposDataEntry;
 import com.usth.githubclient.domain.model.UserSessionData;
 import com.usth.githubclient.fragments.FollowersListFragment;
 import com.usth.githubclient.fragments.RepositoriesListFragment;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Hosts the main search experience and renders a list of followers that can be filtered.
@@ -37,6 +44,8 @@ public class MainActivity extends AppCompatActivity implements
         RepositoriesListFragment.OnRepositorySelectedListener {
     private static final String KEY_CURRENT_QUERY = "key_current_query";
     private static final String KEY_SELECTED_TAB = "key_selected_tab";
+    private static final String DEFAULT_USERNAME = "octocat";
+
 
 
     private ActivityMainBinding binding;
@@ -45,7 +54,15 @@ public class MainActivity extends AppCompatActivity implements
 
     private TextWatcher searchWatcher;
     private final List<GitHubUserProfileDataEntry> allFollowers = new ArrayList<>();
-    private final List<ReposDataEntry> mockRepositories = new ArrayList<>();
+    private final List<ReposDataEntry> allRepositories = new ArrayList<>();
+    private final ExecutorService networkExecutor = Executors.newFixedThreadPool(2);
+    private UserRepository userRepository;
+    private RepoRepository repoRepository;
+    private String activeUsername = DEFAULT_USERNAME;
+    private boolean followersLoading;
+    private boolean repositoriesLoading;
+    private CharSequence followersSummaryText;
+    private CharSequence repositoriesSummaryText;
     private String currentQuery = "";
     private int selectedNavigationItemId = R.id.nav_home;
 
@@ -57,8 +74,10 @@ public class MainActivity extends AppCompatActivity implements
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        initialiseMockFollowers();
-        initialiseMockRepositories();
+        initialiseDataSources();
+        activeUsername = resolveInitialUsername();
+        followersSummaryText = getString(R.string.followers_loading_state);
+        repositoriesSummaryText = getString(R.string.repositories_loading_state);
 
         setupToolbar();
 
@@ -75,6 +94,9 @@ public class MainActivity extends AppCompatActivity implements
             showFollowersScreen();
             binding.bottomNavigation.setSelectedItemId(R.id.nav_home);
         }
+
+        loadFollowersFromApi();
+        loadRepositoriesFromApi();
     }
 
     private void setupBottomNavigation() {
@@ -116,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements
                 binding.toolbar.setSubtitle(getString(R.string.main_subtitle_username, session.getUsername()));
             }
         } else {
-            binding.toolbar.setSubtitle(R.string.main_subtitle_guest);
+            binding.toolbar.setSubtitle(getString(R.string.main_subtitle_username, activeUsername));
         }
     }
 
@@ -124,6 +146,14 @@ public class MainActivity extends AppCompatActivity implements
         binding.toolbar.setTitle(R.string.main_title);
         binding.searchInputLayout.setVisibility(View.VISIBLE);
         binding.resultsSummary.setVisibility(View.VISIBLE);
+        CharSequence summary = followersSummaryText;
+        if (summary == null) {
+            summary = followersLoading
+                    ? getString(R.string.followers_loading_state)
+                    : getString(R.string.followers_results_empty);
+            followersSummaryText = summary;
+        }
+        binding.resultsSummary.setText(summary);
 
         repositoriesFragment = null;
         followersFragment = FollowersListFragment.newInstance();
@@ -140,32 +170,137 @@ public class MainActivity extends AppCompatActivity implements
         binding.searchInputEditText.clearFocus();
 
         followersFragment = null;
-        int repositoryCount = mockRepositories.size();
-        if (repositoryCount == 0) {
-            binding.resultsSummary.setText(R.string.repositories_empty_state);
-        } else {
-            binding.resultsSummary.setText(getString(R.string.repositories_results_count, repositoryCount));
+        CharSequence summary = repositoriesSummaryText;
+        if (summary == null) {
+            summary = repositoriesLoading
+                    ? getString(R.string.repositories_loading_state)
+                    : getString(R.string.repositories_empty_state);
+            repositoriesSummaryText = summary;
         }
-        binding.resultsSummary.setVisibility(View.VISIBLE);
+        binding.resultsSummary.setText(summary);
 
         repositoriesFragment = RepositoriesListFragment.newInstance();
         getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container, repositoriesFragment, RepositoriesListFragment.TAG)
                 .commit();
-        repositoriesFragment.submitList(mockRepositories);
+        repositoriesFragment.submitList(allRepositories);
     }
 
-    private void initialiseMockFollowers() {
-        allFollowers.clear();
-        allFollowers.addAll(MockDataFactory.mockFollowers());
+    private void initialiseDataSources() {
+        ApiClient apiClient = new ApiClient();
+        GithubApiService apiService = apiClient.createService(GithubApiService.class);
+        userRepository = new UserRepository(apiService, ServiceLocator.getInstance().userMapper());
+        repoRepository = new RepoRepository(apiService, ServiceLocator.getInstance().repoMapper());
     }
 
-    private void initialiseMockRepositories() {
-        mockRepositories.clear();
-        mockRepositories.addAll(MockDataFactory.mockRepositories());
+    @NonNull
+    private String resolveInitialUsername() {
+        UserSessionData session = ServiceLocator.getInstance().authRepository().getCachedSession();
+        if (session != null && !TextUtils.isEmpty(session.getUsername())) {
+            return session.getUsername();
+        }
+        return DEFAULT_USERNAME;
     }
 
+    private void loadFollowersFromApi() {
+        if (userRepository == null) {
+            return;
+        }
+        followersLoading = true;
+        setFollowersSummary(getString(R.string.followers_loading_state));
+        networkExecutor.execute(() -> {
+            try {
+                List<GitHubUserProfileDataEntry> followers = userRepository.fetchFollowers(activeUsername);
+                runOnUiThread(() -> {
+                    if (binding == null) {
+                        return;
+                    }
+                    followersLoading = false;
+                    allFollowers.clear();
+                    allFollowers.addAll(followers);
+                    filterFollowers(currentQuery);
+                });
+            } catch (IOException exception) {
+                runOnUiThread(() -> {
+                    if (binding == null) {
+                        return;
+                    }
+                    followersLoading = false;
+                    allFollowers.clear();
+                    if (followersFragment != null) {
+                        followersFragment.submitList(Collections.emptyList());
+                    }
+                    setFollowersSummary(getString(R.string.followers_error_state));
+                    Toast.makeText(MainActivity.this, getString(R.string.followers_error_state), Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
+    private void loadRepositoriesFromApi() {
+        if (repoRepository == null) {
+            return;
+        }
+        repositoriesLoading = true;
+        setRepositoriesSummary(getString(R.string.repositories_loading_state));
+        networkExecutor.execute(() -> {
+            try {
+                List<ReposDataEntry> repositories = repoRepository.fetchUserRepositories(activeUsername);
+                runOnUiThread(() -> {
+                    if (binding == null) {
+                        return;
+                    }
+                    repositoriesLoading = false;
+                    allRepositories.clear();
+                    allRepositories.addAll(repositories);
+                    updateRepositoriesSummary();
+                    if (repositoriesFragment != null) {
+                        repositoriesFragment.submitList(allRepositories);
+                    }
+                });
+            } catch (IOException exception) {
+                runOnUiThread(() -> {
+                    if (binding == null) {
+                        return;
+                    }
+                    repositoriesLoading = false;
+                    allRepositories.clear();
+                    if (repositoriesFragment != null) {
+                        repositoriesFragment.submitList(Collections.emptyList());
+                    }
+                    setRepositoriesSummary(getString(R.string.repositories_error_state));
+                    Toast.makeText(MainActivity.this, getString(R.string.repositories_error_state), Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
+    private void updateRepositoriesSummary() {
+        if (repositoriesLoading) {
+            setRepositoriesSummary(getString(R.string.repositories_loading_state));
+            return;
+        }
+        if (allRepositories.isEmpty()) {
+            setRepositoriesSummary(getString(R.string.repositories_empty_state));
+        } else {
+            setRepositoriesSummary(getString(R.string.repositories_results_count, allRepositories.size()));
+        }
+    }
+
+    private void setFollowersSummary(@NonNull CharSequence summary) {
+        followersSummaryText = summary;
+        if (binding != null && selectedNavigationItemId == R.id.nav_home) {
+            binding.resultsSummary.setText(summary);
+        }
+    }
+
+    private void setRepositoriesSummary(@NonNull CharSequence summary) {
+        repositoriesSummaryText = summary;
+        if (binding != null && selectedNavigationItemId == R.id.nav_repositories) {
+            binding.resultsSummary.setText(summary);
+        }
+    }
 
     private void restoreState(@Nullable Bundle savedInstanceState) {
         if (savedInstanceState != null) {
@@ -190,9 +325,14 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void filterFollowers(@NonNull String query) {
-        if (selectedNavigationItemId != R.id.nav_home) {
+        if (followersLoading) {
+            setFollowersSummary(getString(R.string.followers_loading_state));
+            if (followersFragment != null) {
+                followersFragment.submitList(Collections.emptyList());
+            }
             return;
         }
+
         List<GitHubUserProfileDataEntry> filteredFollowers;
         String trimmedQuery = query.trim();
         if (trimmedQuery.isEmpty()) {
@@ -234,15 +374,15 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void updateResultsSummary(@NonNull String trimmedQuery, int visibleCount) {
+        CharSequence summary;
         if (visibleCount == 0) {
-            binding.resultsSummary.setText(R.string.followers_results_empty);
-            return;
-        }
-        if (trimmedQuery.isEmpty()) {
-            binding.resultsSummary.setText(getString(R.string.followers_results_all, visibleCount));
+            summary = getString(R.string.followers_results_empty);
+        } else if (trimmedQuery.isEmpty()) {
+            summary = getString(R.string.followers_results_all, visibleCount);
         } else {
-            binding.resultsSummary.setText(getString(R.string.followers_results_filtered, visibleCount, allFollowers.size()));
+            summary = getString(R.string.followers_results_filtered, visibleCount, allFollowers.size());
         }
+        setFollowersSummary(summary);
     }
 
     @Override
@@ -288,6 +428,7 @@ public class MainActivity extends AppCompatActivity implements
         searchWatcher = null;
         followersFragment = null;
         repositoriesFragment = null;
+        networkExecutor.shutdownNow();
     }
 
     private abstract static class SimpleTextWatcher implements TextWatcher {
